@@ -9,7 +9,9 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 import astropy.units as u
+from astropy.time import Time
 import astropy.constants as const
+import numpy as np
 import pandas as pd
 import surf.surf as s
 import surf.surf_insitu as sinsit
@@ -21,17 +23,22 @@ FORECAST_HOURS = 72
 def predict(t0):
 
     # Define settings shared by the boundary preparation and model setup.
-
     solver = 'hydro'
     rmin = 21.5 * u.solRad
     rmax = 240.0 * u.solRad
-    latitude = 6.34 * u.deg # TODO Get EARTH LAT at forecast_time
     forecast_time = t0.replace(tzinfo=None)
     buffer_time = 5 * u.day
     start_time = forecast_time - timedelta(days=buffer_time.value) # 5 days spin up
     end_time = forecast_time + timedelta(days=4) # forecast 4 days ahead to pull out 72hr forecast
     simtime = (end_time - start_time).total_seconds() * u.s # total sim time
     gamma = 1.5
+
+    # Get mean Earth latitude over forecast period.
+    step = 12*u.hour
+    n_steps = int(simtime / step.to(u.s))
+    times =  Time(start_time) + np.array([i*step.value for i in range(n_steps-1)])*step.unit
+    ert = s.Observer('EARTH',times)
+    latitude = np.mean(ert.lat).to(u.deg)
 
     # Prepare the selected ambient solar-wind boundary.
     omni_input = sinsit.get_SWPC_realtime(
@@ -73,37 +80,16 @@ def predict(t0):
     # Evolve the model with the configured CMEs and optional streak lines.
     model = s.solve_chunked(model, cme_list, chunk_simtime=3.0 * u.day)
 
-    vsw = sa.get_observer_timeseries(model, observer='ACE', suppress_warning=False)
-    first_forecast_horizon = forecast_time + timedelta(hours=1)
-    forecast_times = pd.date_range(first_forecast_horizon, periods=FORECAST_HOURS, freq='h')
-
-    source = pd.Series(
-        vsw["vsw"].to_numpy(),
-        index=pd.DatetimeIndex(vsw["time"]),
-        dtype=float,
-    ).dropna()
-    source = source[~source.index.duplicated(keep="last")].sort_index()
-
-    interpolation_index = source.index.union(forecast_times).sort_values()
-    interpolated_vsw = (
-        source.reindex(interpolation_index)
-        .interpolate(method="time", limit_area="inside")
-        .reindex(forecast_times)
-    )
-
-    if interpolated_vsw.isna().any():
-        missing_times = interpolated_vsw.index[interpolated_vsw.isna()]
-        raise ValueError(
-            f"Cannot interpolate solar-wind speed at: {missing_times.tolist()}"
-        )
-
-    speeds = interpolated_vsw.tolist()
+    first_forecast = Time(forecast_time + timedelta(hours=1))
+    last_forecast = Time(first_forecast + timedelta(hours=71))
+    ace = sa.get_horizons_body_for_SURF(first_forecast, last_forecast, step='1H', naif_code=-92,
+                                        body_name='ACE')
+    vsw = sa.get_SURF_at_position_HEEQ(model, ace['mjd'], ace['r_rs'], ace['lon_rad'])
 
     #import matplotlib.pyplot as plt
     #fig, ax = plt.subplots(figsize=(16, 8))
     #ax.plot(omni_input['datetime'], omni_input['V'], 'b-')
     #ax.plot(vsw['time'], vsw['vsw'], 'k-')
-    #ax.plot(interpolated_vsw.index, interpolated_vsw, 'r.')
     #ax.vlines(forecast_time, ymin=0, ymax=1000, colors='m', linestyles='dashed')
     #ax.set_xlabel('Time')
     #ax.set_ylabel('Solar Wind Speed (km/s)')
@@ -112,7 +98,8 @@ def predict(t0):
     #fig.subplots_adjust(left=0.1, bottom=0.1, right=0.98, top=0.98)
     #plt.show()
 
-    return speeds
+    #print(vsw['vsw'].to_list())
+    return vsw['vsw'].to_list()
 
 
 def main():
