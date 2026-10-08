@@ -8,7 +8,6 @@ import json
 import sys
 from datetime import datetime, timedelta, timezone
 
-import copy
 import astropy.units as u
 import astropy.constants as const
 import pandas as pd
@@ -19,7 +18,6 @@ import surf.surf_analysis as sa
 
 FORECAST_HOURS = 72
 
-
 def predict(t0):
 
     # Define settings shared by the boundary preparation and model setup.
@@ -28,11 +26,11 @@ def predict(t0):
     rmin = 21.5 * u.solRad
     rmax = 240.0 * u.solRad
     latitude = 6.34 * u.deg # TODO Get EARTH LAT at forecast_time
-    forecast_time = copy(t0)
+    forecast_time = t0.replace(tzinfo=None)
     buffer_time = 5 * u.day
     start_time = forecast_time - timedelta(days=buffer_time.value) # 5 days spin up
     end_time = forecast_time + timedelta(days=4) # forecast 4 days ahead to pull out 72hr forecast
-    simtime = end_time - start_time # total sim time
+    simtime = (end_time - start_time).total_seconds() * u.s # total sim time
     gamma = 1.5
 
     # Prepare the selected ambient solar-wind boundary.
@@ -76,14 +74,45 @@ def predict(t0):
     model = s.solve_chunked(model, cme_list, chunk_simtime=3.0 * u.day)
 
     vsw = sa.get_observer_timeseries(model, observer='ACE', suppress_warning=False)
-    forecast_times = pd.date_range(t0, periods=FORECAST_HOURS, freq='H')
+    first_forecast_horizon = forecast_time + timedelta(hours=1)
+    forecast_times = pd.date_range(first_forecast_horizon, periods=FORECAST_HOURS, freq='h')
 
-    print(vsw['vsw'])
-    print(forecast_times)
+    source = pd.Series(
+        vsw["vsw"].to_numpy(),
+        index=pd.DatetimeIndex(vsw["time"]),
+        dtype=float,
+    ).dropna()
+    source = source[~source.index.duplicated(keep="last")].sort_index()
 
-    # Return 72 hourly solar wind speeds (km/s) for t0+1h .. t0+72h.
-    # Flat persistence: a floor, not a model.
-    return [430.0] * FORECAST_HOURS
+    interpolation_index = source.index.union(forecast_times).sort_values()
+    interpolated_vsw = (
+        source.reindex(interpolation_index)
+        .interpolate(method="time", limit_area="inside")
+        .reindex(forecast_times)
+    )
+
+    if interpolated_vsw.isna().any():
+        missing_times = interpolated_vsw.index[interpolated_vsw.isna()]
+        raise ValueError(
+            f"Cannot interpolate solar-wind speed at: {missing_times.tolist()}"
+        )
+
+    speeds = interpolated_vsw.tolist()
+
+    #import matplotlib.pyplot as plt
+    #fig, ax = plt.subplots(figsize=(16, 8))
+    #ax.plot(omni_input['datetime'], omni_input['V'], 'b-')
+    #ax.plot(vsw['time'], vsw['vsw'], 'k-')
+    #ax.plot(interpolated_vsw.index, interpolated_vsw, 'r.')
+    #ax.vlines(forecast_time, ymin=0, ymax=1000, colors='m', linestyles='dashed')
+    #ax.set_xlabel('Time')
+    #ax.set_ylabel('Solar Wind Speed (km/s)')
+    #ax.set_xlim(start_time, end_time)
+    #ax.set_ylim(200, 800)
+    #fig.subplots_adjust(left=0.1, bottom=0.1, right=0.98, top=0.98)
+    #plt.show()
+
+    return speeds
 
 
 def main():
