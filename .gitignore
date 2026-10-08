@@ -1,3 +1,4 @@
 # Your portal link contains a secret token. Never commit it.
+.idea
 .team
 kit.zip
