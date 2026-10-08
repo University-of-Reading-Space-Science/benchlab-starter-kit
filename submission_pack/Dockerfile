@@ -7,7 +7,7 @@
 # Replace everything between the EDIT markers, including the
 # language and runtime. Keep the ENTRYPOINT contract.
 # ==============================================================
-FROM public.ecr.aws/ubuntu/ubuntu:22.04
+FROM public.ecr.aws/docker/library/python:3.12
 
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /app
@@ -27,7 +27,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir surfs-up
+RUN python -m pip install surfs-up
+
 
 COPY model.py .
 

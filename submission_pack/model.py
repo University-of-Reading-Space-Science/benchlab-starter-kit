@@ -7,6 +7,9 @@
 import json
 import sys
 from datetime import datetime, timedelta, timezone
+from surf import surf as s
+from surf import surf_insitu as sinsit
+from surf import surf_inputs as sin
 
 FORECAST_HOURS = 72
 
@@ -14,7 +17,7 @@ FORECAST_HOURS = 72
 def predict(t0):
     # Return 72 hourly solar wind speeds (km/s) for t0+1h .. t0+72h.
     # Flat persistence: a floor, not a model.
-    return [420.0] * FORECAST_HOURS
+    return [430.0] * FORECAST_HOURS
 
 
 def main():
