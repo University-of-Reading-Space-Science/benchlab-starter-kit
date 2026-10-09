@@ -99,7 +99,8 @@ def predict(t0):
     #plt.show()
 
     #print(vsw['vsw'].to_list())
-    return vsw['vsw'].to_list()
+    speed = [np.int(v) for v in vsw['vsw'].to_list()]
+    return speed
 
 
 def main():
