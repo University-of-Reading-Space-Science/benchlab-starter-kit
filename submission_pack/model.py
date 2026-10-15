@@ -99,16 +99,17 @@ def predict(t0):
     #plt.show()
 
     #print(vsw['vsw'].to_list())
-    speed = [np.int(v) for v in vsw['vsw'].to_list()]
+    speed = [int(v) for v in vsw['vsw'].to_list()]
     return speed
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("usage: model.py <YYYYMMDDTHHMMSSZ>", file=sys.stderr)
+    if len(sys.argv) != 3:
+        print("usage: model.py <YYYYMMDDTHHMMSSZ> <output_path>", file=sys.stderr)
         return 2
 
     t0 = datetime.strptime(sys.argv[1], "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+    out_path = sys.argv[2]
     speeds = predict(t0)
 
     if len(speeds) != FORECAST_HOURS:
@@ -118,14 +119,10 @@ def main():
         )
         return 3
 
-    json.dump(
-        {
-            "t0": t0.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "valid_from": (t0 + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "forecast_speed_kms": [float(v) for v in speeds],
-        },
-        sys.stdout,
-    )
+    # Write the speeds to the output file
+    with open(out_path, "w") as f:
+        json.dump({'forecast_speed_kms':speeds}, f)
+
     return 0
 
 
