@@ -108,8 +108,11 @@ def main():
         print("usage: model.py <YYYYMMDDTHHMMSSZ> <output_path>", file=sys.stderr)
         return 2
 
-    t0 = datetime.strptime(sys.argv[1], "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+    t0_in = sys.argv[1]
     out_path = sys.argv[2]
+
+    t0 = datetime.strptime(t0_in, "%Y%m%dT%H%M%SZ")
+    valid_from = t0 + timedelta(hours=1)
     speeds = predict(t0)
 
     if len(speeds) != FORECAST_HOURS:
@@ -120,8 +123,12 @@ def main():
         return 3
 
     # Write the speeds to the output file
+    out_dict = {'t0':t0.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                'valid_from':valid_from.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                'forecast_speed_kms':speeds}
+
     with open(out_path, "w") as f:
-        json.dump({'forecast_speed_kms':speeds}, f)
+        json.dump(out_dict, f)
 
     return 0
 
