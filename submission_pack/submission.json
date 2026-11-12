@@ -1,6 +1,6 @@
 {
   "team_name": "Team SURF",
-  "contact_email": "m.j.owens@reading.ac.uk",
+  "contact_email": "l.a.barnard@reading.ac.uk",
   "cpu_units": 4096,
   "memory_mib": 16384,
   "declared_domains": ["services.swpc.noaa.gov", "cdaweb.gsfc.nasa.gov", "iswa.ccmc.gsfc.nasa.gov", "ccmc.gsfc.nasa.gov"]
