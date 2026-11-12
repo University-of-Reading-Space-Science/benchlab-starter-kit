@@ -65,6 +65,7 @@ def predict(t0):
         donki_cmes = sin.get_DONKI_cme_list(model, start_time, forecast_time, feature='LE')
     except Exception as exc:
         raise RuntimeError('DONKI CME data could not be accessed') from exc
+
     print(f'Loaded {len(donki_cmes)} DONKI cone CMEs for this run')
     for donki_cme in donki_cmes:
         donki_cme.profile_type = 'sinusoidal'
@@ -86,19 +87,6 @@ def predict(t0):
                                         body_name='ACE')
     vsw = sa.get_SURF_at_position_HEEQ(model, ace['mjd'], ace['r_rs'], ace['lon_rad'])
 
-    #import matplotlib.pyplot as plt
-    #fig, ax = plt.subplots(figsize=(16, 8))
-    #ax.plot(omni_input['datetime'], omni_input['V'], 'b-')
-    #ax.plot(vsw['time'], vsw['vsw'], 'k-')
-    #ax.vlines(forecast_time, ymin=0, ymax=1000, colors='m', linestyles='dashed')
-    #ax.set_xlabel('Time')
-    #ax.set_ylabel('Solar Wind Speed (km/s)')
-    #ax.set_xlim(start_time, end_time)
-    #ax.set_ylim(200, 800)
-    #fig.subplots_adjust(left=0.1, bottom=0.1, right=0.98, top=0.98)
-    #plt.show()
-
-    #print(vsw['vsw'].to_list())
     speed = [int(v) for v in vsw['vsw'].to_list()]
     return speed
 

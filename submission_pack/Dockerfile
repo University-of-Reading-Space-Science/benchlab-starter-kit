@@ -29,7 +29,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN python -m pip install surfs-up
 
-
 COPY model.py .
 
 # ================= EDIT ABOVE =================================
