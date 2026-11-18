@@ -44,9 +44,9 @@ to the hours from `valid_from` through `t0 + 72 hours`.
   field at the ACE trajectory hourly;
 - returns the first 72 samples, from one hour after the inference timestamp.
 
-The model deliberately fails if DONKI CME data cannot be retrieved or if it
+The model fails if DONKI CME data cannot be retrieved or if it
 does not produce 72 values. It therefore requires network access to the
-domains declared in `submission.json`.
+domains declared in `submission.json`. If the model fails, it returns 72 np.nans.
 
 ## Image contents and resources
 
