@@ -117,6 +117,16 @@ def main():
     out_path = sys.argv[2]
 
     t0 = datetime.strptime(t0_in, "%Y%m%dT%H%M%SZ")
+
+    # To be safe, force t0 to snap to the nearest six-hour boundary
+    rounded_t0 = t0 + timedelta(hours=3)
+    t0 = rounded_t0.replace(
+        hour=rounded_t0.hour - (rounded_t0.hour % 6),
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+
     valid_from = t0 + timedelta(hours=1)
     speeds = predict(t0)
 
@@ -130,7 +140,8 @@ def main():
     # Write the speeds to the output file
     out_dict = {'t0':t0.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 'valid_from':valid_from.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                'forecast_speed_kms':speeds}
+                'forecast_speed_kms':speeds,
+                }
 
     for key, value in out_dict.items():
         print(f"{key}: {value}")

@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python -m pip install surfs-up
+RUN python -m pip install surfs-up==1.0.0
 
 COPY model.py .
 
