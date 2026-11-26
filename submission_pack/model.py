@@ -57,7 +57,7 @@ def predict(t0):
                                                                         limit_direction='both')
 
         omni_input = sinsit.removeICMEs(omni_input, icme_list='DONKI', pre_icme_buffer=0.2,
-                                        post_icme_buffer=1.0, donki_min_quality=1)
+                                        post_icme_buffer=1.0, donki_min_quality=-1)
 
         model = sinsit.omniSURF_forecast(forecast_time, simtime=simtime, buffertime=buffer_time,
                                          rmin=rmin, rmax=rmax, dr=1.5 * u.solRad, nlon=128,
